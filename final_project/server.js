@@ -26,10 +26,14 @@ app.use(cors({
 }))
 app.use(fileUpload())
 
-const uploadDir = path.join(__dirname, 'uploads')
+const uploadDir = process.env.VERCEL ? path.join('/tmp', 'uploads') : path.join(__dirname, 'uploads');
 
-if (!fs.existsSync(uploadDir)) {
-  fs.mkdirSync(uploadDir)
+try {
+  if (!fs.existsSync(uploadDir)) {
+    fs.mkdirSync(uploadDir, { recursive: true });
+  }
+} catch (e) {
+  console.warn('Upload directory notice:', e.message);
 }
 
 app.get('/books', bookController.list)
@@ -130,9 +134,11 @@ app.delete('/remove/:id', (req, res) => {
   res.json({ id: id });
 });
 
-const server = app.listen(port, () => {
+if (!process.env.VERCEL) {
+  const server = app.listen(port, () => {
     console.log(`server is running on localhost:${port}`);
-});
+  });
+}
 
 // Graceful shutdown for watch mode and other termination signals
 const shutdown = (signal) => {
