@@ -136,40 +136,42 @@ app.delete('/remove/:id', (req, res) => {
   res.json({ id: id });
 });
 
+let server;
 if (!process.env.VERCEL) {
-  const server = app.listen(port, () => {
+  server = app.listen(port, () => {
     console.log(`server is running on localhost:${port}`);
   });
-}
 
-// Graceful shutdown for watch mode and other termination signals
-const shutdown = (signal) => {
+  const shutdown = (signal) => {
     console.log(`Received ${signal}. Closing server...`);
-    server.close(err => {
+    if (server) {
+      server.close(err => {
         if (err) {
-            console.error('Error closing server:', err);
-            process.exit(1);
+          console.error('Error closing server:', err);
+          process.exit(1);
         }
         process.exit(0);
-    });
-};
+      });
+    }
+  };
 
-['SIGTERM', 'SIGINT', 'SIGHUP'].forEach(sig => {
+  ['SIGTERM', 'SIGINT', 'SIGHUP'].forEach(sig => {
     try {
-        process.on(sig, () => shutdown(sig));
+      process.on(sig, () => shutdown(sig));
     } catch (e) {
-        // Signal might not be available on this platform
+      // Signal might not be available on this platform
     }
-});
+  });
 
-process.on('uncaughtException', (err) => {
+  process.on('uncaughtException', (err) => {
     if (err && err.code === 'EADDRINUSE') {
-        console.error(`Port ${port} is already in use.`);
+      console.error(`Port ${port} is already in use.`);
     } else {
-        console.error('Uncaught exception:', err);
+      console.error('Uncaught exception:', err);
     }
-    try { server.close(() => process.exit(1)); } catch (_) { process.exit(1); }
-});
+    try { if (server) server.close(() => process.exit(1)); else process.exit(1); } catch (_) { process.exit(1); }
+  });
+}
 
 app.post('/login', (req, res) => {
     try {
