@@ -1,5 +1,4 @@
-const { PrismaClient } = require('../generated/prisma/index.js')
-const prisma = new PrismaClient()
+const prisma = require('../lib/prisma')
 
 const BookController = {
   list: async (req, res) => {
@@ -27,14 +26,14 @@ const BookController = {
       })
       res.json(book)
   },
-    delete: async (req, res) => {
-        await prisma.book.delete({
-            where: {
-                id: parseInt(req.params.id)
-            }
-        })
-        res.json({ message: 'success' })
-    }
+  delete: async (req, res) => {
+      await prisma.book.delete({
+          where: {
+              id: parseInt(req.params.id)
+          }
+      })
+      res.json({ message: 'success' })
+  }
 }
 
 module.exports = BookController;

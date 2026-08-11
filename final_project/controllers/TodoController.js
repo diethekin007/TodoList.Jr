@@ -1,5 +1,4 @@
-const { PrismaClient } = require('../generated/prisma/index.js')
-const prisma = new PrismaClient()
+const prisma = require('../lib/prisma')
 const jwt = require('jsonwebtoken')
 const dotenv = require('dotenv')
 
@@ -152,6 +151,7 @@ const TodoController = {
       res.status(500).json({ error: err.message });
     }
   },
+
   dashboard: async (req, res) => {
     try {
       const token = req.headers['authorization'].replace('Bearer ', '')

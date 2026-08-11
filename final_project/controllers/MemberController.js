@@ -1,8 +1,7 @@
-const { PrismaClient } = require('../generated/prisma/index.js')
-const prisma = new PrismaClient()
+const prisma = require('../lib/prisma')
 const bcrypt = require('bcryptjs')
 const jwt = require('jsonwebtoken')
-const dotenv = require ('dotenv')
+const dotenv = require('dotenv')
 dotenv.config()
 
 const MemberController = {
@@ -83,6 +82,7 @@ const MemberController = {
             res.status(500).json({ error: err.message })
         }
     },
+
     update: async (req, res) => {
         try {
             const { name, username, password } = req.body
@@ -112,7 +112,7 @@ const MemberController = {
 
             res.json({ message: 'success' })
         } catch (err) {
-            console.log(err) 
+            console.log(err)
             res.status(500).json({ error: err.message })
         }
     }

@@ -20,3 +20,7 @@ Thumbs.db
 .idea/
 .qodo/
 *.log
+
+# Windows Prisma engine files (not needed on Vercel/Linux)
+final_project/generated/prisma/query_engine-windows.dll.node
+final_project/generated/prisma/query_engine-windows.dll.node.tmp*
