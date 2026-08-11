@@ -1,4 +1,4 @@
-const prisma = require('../lib/prisma')
+const supabase = require('../lib/supabase')
 const jwt = require('jsonwebtoken')
 const dotenv = require('dotenv')
 
@@ -13,13 +13,14 @@ const TodoController = {
       const payload = jwt.verify(token, secret_key)
       const member_id = payload.id
 
-      await prisma.todo.create({
-        data: {
+      const { error } = await supabase.from('Todo').insert([
+        {
           name: name,
           remark: remark,
           member_id: member_id
         }
-      })
+      ])
+      if (error) throw error
       res.json({ message: 'success' })
     } catch (err) {
       res.status(500).json({ error: err.message });
@@ -33,14 +34,8 @@ const TodoController = {
         const payload = jwt.verify(token, secret_key)
         const member_id = payload.id
 
-        const todos = await prisma.todo.findMany({
-        where: {
-            member_id: member_id
-        },
-        orderBy: {
-            id: 'desc'
-        }
-        })
+        const { data: todos, error } = await supabase.from('Todo').select('*').eq('member_id', member_id).order('id', { ascending: false })
+        if (error) throw error
 
         res.json(todos)
     } catch (err) {
@@ -57,16 +52,12 @@ const TodoController = {
       const payload = jwt.verify(token, secret_key)
       const member_id = payload.id
 
-      await prisma.todo.update({
-        data: {
-          name: name,
-          remark: remark
-        },
-        where: {
-          id: id,
-          member_id: member_id
-        }
-      })
+      const { error } = await supabase.from('Todo').update({
+        name: name,
+        remark: remark
+      }).eq('id', id).eq('member_id', member_id)
+
+      if (error) throw error
 
       res.json({ message: 'success' })
     } catch (err) {
@@ -82,12 +73,8 @@ const TodoController = {
         const payload = jwt.verify(token, secret_key)
         const member_id = payload.id
 
-        await prisma.todo.delete({
-          where: {
-            id: id,
-            member_id: member_id
-          }
-        })
+        const { error } = await supabase.from('Todo').delete().eq('id', id).eq('member_id', member_id)
+        if (error) throw error
 
         res.json({ message: 'success' })
       } catch (err) {
@@ -104,15 +91,11 @@ const TodoController = {
       const payload = jwt.verify(token, secret_key)
       const member_id = payload.id
 
-      await prisma.todo.update({
-        data: {
-          status: status
-        },
-        where: {
-          id: id,
-          member_id: member_id
-        }
-      })
+      const { error } = await supabase.from('Todo').update({
+        status: status
+      }).eq('id', id).eq('member_id', member_id)
+
+      if (error) throw error
 
       res.json({ message: 'success' })
     } catch (err) {
@@ -128,23 +111,18 @@ const TodoController = {
       const payload = jwt.verify(token, secret_key)
       const member_id = payload.id
 
-      const condition = {
-        member_id: member_id
-      }
+      let query = supabase.from('Todo').select('*').eq('member_id', member_id).order('id', { ascending: false })
 
       if (status != 'all') {
-        condition.status = status
-      }
-      if (status == 'wait') {
-        condition.status = 'use'
+        if (status == 'wait') {
+          query = query.eq('status', 'use')
+        } else {
+          query = query.eq('status', status)
+        }
       }
 
-      const todos = await prisma.todo.findMany({
-        where: condition,
-        orderBy: {
-          id: 'desc'
-        }
-      })
+      const { data: todos, error } = await query
+      if (error) throw error
 
       res.json(todos)
     } catch (err) {
@@ -159,40 +137,16 @@ const TodoController = {
       const payload = jwt.verify(token, secret_key)
       const member_id = payload.id
 
-      const countWait = await prisma.todo.aggregate({
-        _count: {
-          id: true
-        },
-        where: {
-          status: 'use',
-          member_id: member_id
-        }
-      })
+      const { count: countWait, error: err1 } = await supabase.from('Todo').select('*', { count: 'exact', head: true }).eq('status', 'use').eq('member_id', member_id)
+      const { count: countDoing, error: err2 } = await supabase.from('Todo').select('*', { count: 'exact', head: true }).eq('status', 'doing').eq('member_id', member_id)
+      const { count: countSuccess, error: err3 } = await supabase.from('Todo').select('*', { count: 'exact', head: true }).eq('status', 'success').eq('member_id', member_id)
 
-      const countDoing = await prisma.todo.aggregate({
-        _count: {
-          id: true
-        },
-        where: {
-          status: 'doing',
-          member_id: member_id
-        }
-      })
-
-      const countSuccess = await prisma.todo.aggregate({
-        _count: {
-          id: true
-        },
-        where: {
-          status: 'success',
-          member_id: member_id
-        }
-      })
+      if (err1 || err2 || err3) throw (err1 || err2 || err3)
 
       res.json({
-        countWait: countWait._count.id,
-        countDoing: countDoing._count.id,
-        countSuccess: countSuccess._count.id
+        countWait: countWait || 0,
+        countDoing: countDoing || 0,
+        countSuccess: countSuccess || 0
       })
     } catch (err) {
       res.status(500).json({ error: err.message });

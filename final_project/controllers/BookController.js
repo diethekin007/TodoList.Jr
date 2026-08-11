@@ -1,38 +1,46 @@
-const prisma = require('../lib/prisma')
+const supabase = require('../lib/supabase')
 
 const BookController = {
   list: async (req, res) => {
-      const books = await prisma.book.findMany()
+    try {
+      const { data: books, error } = await supabase.from('Book').select('*').order('id', { ascending: true })
+      if (error) throw error
       res.json(books)
+    } catch (err) {
+      res.status(500).json({ error: err.message })
+    }
   },
   create: async (req, res) => {
-      const book = await prisma.book.create({
-          data: {
-              name: req.body.name,
-              price: req.body.price
-          }
-      })
-      res.json({ book: book })
+    try {
+      const { data: book, error } = await supabase.from('Book').insert([
+        { name: req.body.name, price: req.body.price }
+      ]).select().single()
+      if (error) throw error
+      res.json({ book })
+    } catch (err) {
+      res.status(500).json({ error: err.message })
+    }
   },
   update: async (req, res) => {
-      const book = await prisma.book.update({
-          data: {
-              name: req.body.name,
-              price: req.body.price
-          },
-          where: {
-              id: parseInt(req.params.id)
-          }
-      })
+    try {
+      const { data: book, error } = await supabase.from('Book').update({
+        name: req.body.name,
+        price: req.body.price
+      }).eq('id', parseInt(req.params.id)).select().single()
+      if (error) throw error
       res.json(book)
+    } catch (err) {
+      res.status(500).json({ error: err.message })
+    }
   },
   delete: async (req, res) => {
-      await prisma.book.delete({
-          where: {
-              id: parseInt(req.params.id)
-          }
-      })
+    try {
+      const { error } = await supabase.from('Book').delete().eq('id', parseInt(req.params.id))
+      if (error) throw error
       res.json({ message: 'success' })
+    } catch (err) {
+      res.status(500).json({ error: err.message })
+    }
   }
 }
 

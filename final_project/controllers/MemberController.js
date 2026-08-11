@@ -1,4 +1,4 @@
-const prisma = require('../lib/prisma')
+const supabase = require('../lib/supabase')
 const bcrypt = require('bcryptjs')
 const jwt = require('jsonwebtoken')
 const dotenv = require('dotenv')
@@ -12,21 +12,21 @@ const MemberController = {
                 return res.status(400).json({ error: 'กรุณากรอกชื่อผู้ใช้และรหัสผ่าน' })
             }
 
-            const existingUser = await prisma.member.findFirst({
-                where: { username: username }
-            })
+            const { data: existingUser, error: findError } = await supabase.from('Member').select('username').eq('username', username).single()
             if (existingUser) {
                 return res.status(400).json({ error: 'ชื่อผู้ใช้นี้มีในระบบแล้ว' })
             }
 
             const hashedPassword = await bcrypt.hash(password, 10)
-            const newMember = await prisma.member.create({
-                data: {
+            const { data: newMember, error: createError } = await supabase.from('Member').insert([
+                {
                     name: name || username,
                     username: username,
                     password: hashedPassword
                 }
-            })
+            ]).select().single()
+
+            if (createError) throw createError
             res.json(newMember)
         } catch (err) {
             console.error('Signup error:', err)
@@ -38,10 +38,7 @@ const MemberController = {
         try {
             const { username, password } = req.body
 
-            const findUser = await prisma.member.findFirst({
-                where: { username },
-                select: { id: true, password: true }
-            })
+            const { data: findUser, error } = await supabase.from('Member').select('id, password').eq('username', username).single()
 
             if (!findUser) return res.status(401).json({ message: 'unauthorized' })
 
@@ -67,15 +64,8 @@ const MemberController = {
             const payload = jwt.verify(token, secret_key)
             const member_id = payload.id
 
-            const member = await prisma.member.findFirst({
-                where: {
-                    id: member_id
-                },
-                select: {
-                    name: true,
-                    username: true
-                }
-            })
+            const { data: member, error } = await supabase.from('Member').select('name, username').eq('id', member_id).single()
+            if (error) throw error
 
             res.json(member)
         } catch (err) {
@@ -91,24 +81,18 @@ const MemberController = {
             const payload = jwt.verify(token, secret_key)
             const member_id = payload.id
 
-            const oldMember = await prisma.member.findFirst({
-            where: {
-                id: member_id
-            }
-            })
+            const { data: oldMember, error: findError } = await supabase.from('Member').select('password').eq('id', member_id).single()
+            if (findError) throw findError
 
             const hashedPassword = await bcrypt.hash(password, 10)
 
-            await prisma.member.update({
-            data: {
+            const { error: updateError } = await supabase.from('Member').update({
                 name: name,
                 username: username,
                 password: password == '' ? oldMember.password : hashedPassword
-            },
-            where: {
-                id: member_id
-            }
-            })
+            }).eq('id', member_id)
+
+            if (updateError) throw updateError
 
             res.json({ message: 'success' })
         } catch (err) {
