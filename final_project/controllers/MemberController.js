@@ -9,19 +9,31 @@ const MemberController = {
     signup: async (req, res) => {
         try {
             const { name, username, password } = req.body
+            if (!username || !password) {
+                return res.status(400).json({ error: 'กรุณากรอกชื่อผู้ใช้และรหัสผ่าน' })
+            }
+
+            const existingUser = await prisma.member.findFirst({
+                where: { username: username }
+            })
+            if (existingUser) {
+                return res.status(400).json({ error: 'ชื่อผู้ใช้นี้มีในระบบแล้ว' })
+            }
+
             const hashedPassword = await bcrypt.hash(password, 10)
             const newMember = await prisma.member.create({
                 data: {
-                    name: name,
+                    name: name || username,
                     username: username,
                     password: hashedPassword
                 }
             })
             res.json(newMember)
         } catch (err) {
-            res.status(500).json({ error: err.message });
+            console.error('Signup error:', err)
+            res.status(500).json({ error: err.message || 'Server error' });
         }
-    }, // <-- แก้ไข: เพิ่ม comma
+    },
 
     signin: async (req, res) => {
         try {

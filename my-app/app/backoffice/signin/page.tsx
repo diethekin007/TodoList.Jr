@@ -54,9 +54,15 @@ export default function SignIn() {
           confirmButtonColor: '#e945f5'
         });
       } else {
+        let errorMessage = 'ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้';
+        if (axios.isAxiosError(err) && err.response?.data) {
+          errorMessage = err.response.data.error || err.response.data.message || errorMessage;
+        } else if (err instanceof Error) {
+          errorMessage = err.message;
+        }
         Swal.fire({
           title: 'เกิดข้อผิดพลาด',
-          text: (err as Error).message || 'ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้',
+          text: errorMessage,
           icon: 'error',
           confirmButtonColor: '#e945f5'
         });
