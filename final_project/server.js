@@ -21,9 +21,11 @@ const TodoController = require('./controllers/TodoController')
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(cors({
-  "origin": "*", // ทุกโดเมน เช่น www.kobshop.com
-  "methods": "GET,PUT,POST,DELETE",
+  origin: '*',
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'Origin', 'Accept', 'X-Requested-With']
 }))
+app.options('*', cors())
 app.use(fileUpload())
 
 const uploadDir = process.env.VERCEL ? path.join('/tmp', 'uploads') : path.join(__dirname, 'uploads');
