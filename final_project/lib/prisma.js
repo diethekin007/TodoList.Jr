@@ -1,4 +1,4 @@
-const { PrismaClient } = require('../generated/prisma/index.js')
+const { PrismaClient } = require('@prisma/client')
 
 // Prevent multiple instances of Prisma Client in development
 // In production (Vercel), create a single instance
